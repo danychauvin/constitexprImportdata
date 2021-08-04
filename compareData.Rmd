@@ -1,0 +1,149 @@
+---
+title: "Comparing_models.Rmd"
+author: "Dany Chauvin"
+date: "6/4/2021"
+output: html_document
+---
+
+# Importing data from Lis experiments
+
+```{r message=FALSE,warning=FALSE}
+#Load the first data set
+source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/loadFunctionsAndPackages.R")
+path_to_MM_data_summary <- "/scicore/home/nimwegen/rocasu25/MM_Data/Dany/20190515/202106_testing_augmented_models/dataList_old_model.csv"
+source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/readMMData.R")
+source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/transformMMData.R")
+myframes_to_mycells <- myframes_to_mycells %>% 
+   mutate(strain='MG1655')
+
+myframes_to_mycells_model1 <- myframes_to_mycells
+mycells_model1 <- mycells
+
+#Load the second data set
+source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/loadFunctionsAndPackages.R")
+path_to_MM_data_summary <- "/scicore/home/nimwegen/rocasu25/MM_Data/Dany/20190515/202106_testing_augmented_models/dataList_augmented_model.csv"
+source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/readMMData.R")
+source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/transformMMData.R")
+myframes_to_mycells <- myframes_to_mycells %>% 
+   mutate(strain='MG1655')
+
+myframes_to_mycells_model2 <- myframes_to_mycells
+mycells_model2 <- mycells
+```
+
+# COMPARISON OF DISTRIBUTIONS
+
+```{r}
+#Compare first the distribution of sizes
+
+mycells_model1 %>% 
+  ggplot()+
+  stat_ecdf(aes(alpha*3600/log(2)),col="black")+
+  stat_ecdf(data=mycells_model1,aes(alpha*3600/log(2)),col="green")+
+  stat_ecdf(data=mycells_model2,aes(alpha*3600/log(2)),col="blue")+
+  facet_wrap(~condition)+
+  xlab("Growth-rate (h-1)")+
+  ylab("CDF")
+
+mycells_model1 %>% 
+  ggplot()+
+  stat_ecdf(aes(volume_birth),col="black")+
+  stat_ecdf(data=mycells_model1,aes(volume_birth),col="green")+
+  stat_ecdf(data=mycells_model2,aes(volume_birth),col="blue")+
+  facet_wrap(~condition,scale="free")+
+  xlab("Volume birth (um3)")+
+  ylab("CDF")
+
+mycells_model1 %>% 
+  ggplot()+
+  stat_ecdf(aes(volume_div),col="black")+
+  stat_ecdf(data=mycells_model1,aes(volume_div),col="green")+
+  stat_ecdf(data=mycells_model2,aes(volume_div),col="blue")+
+  facet_wrap(~condition,scale="free")+
+  xlab("Volume birth (um3)")+
+  ylab("CDF")
+
+mycells_model1 %>% 
+  ggplot()+
+  stat_ecdf(aes(div_time),col="black")+
+  stat_ecdf(data=mycells_model1,aes(div_time),col="green")+
+  stat_ecdf(data=mycells_model2,aes(div_time),col="blue")+
+  facet_wrap(~condition,scale="free")+
+  xlab("Division time")+
+  ylab("CDF")
+```
+There seem to be a bias, it seems to be systematic but it is not very important...
+
+# COMPARISON CELL BY CELL
+
+First, I have to find a way to establish the correspondence between the cells in the three data sets. Which is something I had done in the past.
+
+```{r}
+#First cells that are the closest to each other between old and augmented
+
+augmented_cells <- myframes_to_mycells_model2 %>% 
+  group_by(cell) %>% 
+  mutate(first_frame=first(frame)) %>% 
+  ungroup() %>% 
+  distinct(cell,gl,first_frame,mean_position_um)
+
+old_cells <- myframes_to_mycells_model1 %>% 
+  group_by(cell) %>% 
+  mutate(first_frame=first(frame)) %>% 
+  ungroup() %>% 
+  distinct(cell,gl,first_frame,mean_position_um)
+
+
+find_closest <- function(df1,df2){
+  
+    closest <- df1 %>%
+      group_by(cell) %>% 
+      do((function(.df){
+        mean_pos_1 <- .df$mean_position_um[[1]]
+        first_frame_1 <- .df$first_frame[[1]]
+        cell_1 <- .df$cell[[1]]
+        gl_1 <- .df$gl[[1]]
+        lc <- df2  %>% 
+          filter(gl==gl_1) %>% 
+          mutate(cell_1=cell_1) %>% 
+          mutate(delta_pos=abs(mean_pos_1-mean_position_um),
+                 delta_frame=abs(first_frame_1-first_frame),
+                 total_dif=(delta_pos+1)*(delta_frame+1)) %>% 
+          arrange(total_dif) %>%
+          filter(row_number()==1) %>% 
+          select(cell_1,cell,delta_pos,delta_frame,total_dif)
+        return(lc)
+      })(.)) %>% 
+      ungroup()
+    return(closest)
+    }
+  
+closest_old_augmented <- find_closest(old_cells,augmented_cells)
+
+```
+
+```{r}
+# Getting rid of ambiguities
+closest_old_augmented <- closest_old_augmented %>% 
+  group_by(cell) %>% 
+  filter(n()<2) %>% 
+  ungroup()
+```
+
+# NOW COMPARING RESULTS
+
+```{r}
+for(c1 in closest_old_augmented$cell_1[1:10]){
+  c2 <- unique(closest_old_augmented %>% 
+                 filter(cell_1==c1) %>% 
+                 .$cell)
+  
+    print(myframes_to_mycells_model1 %>% 
+    filter(cell==c1) %>% 
+      ggplot()+
+      geom_point(aes(time_sec,volume_um),col="black")+
+      geom_point(data=myframes_to_mycells_model2 %>% 
+                   filter(cell==c2),aes(time_sec,volume_um),col="green"))
+}
+
+```
