@@ -22,6 +22,7 @@ library(vngMoM)
 library(ggcorrplot)
 library(ggpubr)
 library(nloptr)
+library(RColorBrewer)
 
 # Notes about Rcpp Armadillo. It is already installed together with Lapack in
 # /scicore/soft/apps/R/4.1.0-foss-2018b/lib64/R

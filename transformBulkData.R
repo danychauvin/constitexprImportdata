@@ -15,7 +15,7 @@ mydata <- mydata %>%
   mutate(corrected_fluo=fluo-mean_blank_fluo) %>% 
   filter(!grepl("H_7",well)) #Discarding this well which was problematic anyway
 
-mydata_bad <- readr::read_csv("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/20210325_momentum_kinetics_alldata/manualCuration.csv",
+mydata_bad <- readr::read_csv(path_to_manual_curation,
                               show_col_types = FALSE) #Wells with obviously wrong results (cells not growing, or outliers)
 
 mydata <- mydata %>% 
