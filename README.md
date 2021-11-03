@@ -7,6 +7,7 @@ constitexprImportdata is a repository to keep my data import routines.
 ### loadFunctionsAndPackages.R
 
 Calls the packages and necessary functions to import and transform the data in this project.
+Bear in mind: everything should be compatible with R 4.1.0.
 
 ### readMMData.R
 
