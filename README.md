@@ -1,4 +1,10 @@
-# constitExprImportCodes
+# constitexprImportdata
+
+constitexprImportdata is a repository to keep my data import routines.
+
+## List of files
+
+- loadFunctionsAndPackages 
 
 + You can start with compareData.Rmd
 - It is calling other scripts which are in the same git repo you will see:

@@ -9,9 +9,11 @@
 #install.packages("devtools")
 #install.packages("ggcorrplot")
 #install.packages("ggpubr")
+#install.packages("comprehenr")
 #devtools::install_github(c('hadley/multidplyr'))
 #devtools::install_github(c('julou/ggCustomTJ'))
-#devtools::install_github('vanNimwegenLab/vngMoM',auth_token="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")
+#devtools::install_github('vanNimwegenLab/vngMoM',auth_token="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")
+
 
 library(tidyverse)
 library(cowplot)
@@ -23,16 +25,23 @@ library(ggcorrplot)
 library(ggpubr)
 library(nloptr)
 library(RColorBrewer)
-
+library(RcppArmadillo)
+library(comprehenr)
 # Notes about Rcpp Armadillo. It is already installed together with Lapack in
 # /scicore/soft/apps/R/4.1.0-foss-2018b/lib64/R
+# But for whathever reason, vngMoM installs it too, on top of the already incorporated install.
+# So use: remove.packages("RcppArmadillo").
 # WARNING: libstdc++.so.6 library, with proper GLIBCXX versions is necessary to use RcppArmadillo.
 # Be sure that GCCcore/8.3.0 is loaded/installed.
 # To do so while using Rstudio on the scicore server "service06", do the following, add the following to your ~/.bashrc file:
 # `if [[ "$HOSTNAME" = *service06* ]]; then
 #     ml GCCcore/8.3.0
 #  fi'
-library(RcppArmadillo)
+
+# Then use renv::
+#install.packages("renv")
+#renv::init()
+#renv::snapshot()
 
 # ------------------------------------ Functions necessary for the import and transformation of MM Data -----------------------------------------------------------------
 
