@@ -10,6 +10,11 @@ Calls the packages and necessary functions to import and transform the data in t
 
 ### readMMData.R
 
+Warnings: There are currently two versions:
+- readMMData_202008.R is compatible with the old deepMoma output (202008).
+- readMMData_202111.R is compatible with the newest deepMoma output (202111).
+
+
 #### Input
 
 Imports the output of deepMoma (output folders whose paths are specified in a summary csv file, whose path has to be specified in the variable 'path_to_MM_data_summary').
