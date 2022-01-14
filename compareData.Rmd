@@ -5,74 +5,285 @@ date: "6/4/2021"
 output: html_document
 ---
 
-# Importing data from Lis experiments
+# IMPORTING DATA
 
 ```{r message=FALSE,warning=FALSE}
 #Load the first data set
-source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/loadFunctionsAndPackages.R")
-path_to_MM_data_summary <- "/scicore/home/nimwegen/rocasu25/MM_Data/Dany/20190515/202106_testing_augmented_models/dataList_old_model.csv"
-source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/readMMData.R")
-source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/transformMMData.R")
+source("./loadFunctionsAndPackages.R")
+path_to_MM_data_summary <- "./dataLists/hi1_only.csv"
+
+source("./readMMData_20220113.R")
+source("./transformMMData.R")
+
 myframes_to_mycells <- myframes_to_mycells %>% 
    mutate(strain='MG1655')
-
-myframes_to_mycells_model1 <- myframes_to_mycells
-mycells_model1 <- mycells
-
-#Load the second data set
-source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/loadFunctionsAndPackages.R")
-path_to_MM_data_summary <- "/scicore/home/nimwegen/rocasu25/MM_Data/Dany/20190515/202106_testing_augmented_models/dataList_augmented_model.csv"
-source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/readMMData.R")
-source("/scicore/home/nimwegen/rocasu25/Documents/Projects/biozentrum/constitExprImportCodes/transformMMData.R")
-myframes_to_mycells <- myframes_to_mycells %>% 
-   mutate(strain='MG1655')
-
-myframes_to_mycells_model2 <- myframes_to_mycells
-mycells_model2 <- mycells
 ```
 
-# COMPARISON OF DISTRIBUTIONS
+# COMPARISON OF TRACES FOR GLUCOSE FOR A FEW TRACES
+
+Test in glucose, where the tilting can be ignored.
 
 ```{r}
-#Compare first the distribution of sizes
+selected_cells <- myframes_to_mycells %>%
+  filter(condition=="glucose") %>% 
+  ungroup() %>% 
+  distinct(cell) %>% 
+  sample_n(10)
 
-mycells_model1 %>% 
-  ggplot()+
-  stat_ecdf(aes(alpha*3600/log(2)),col="black")+
-  stat_ecdf(data=mycells_model1,aes(alpha*3600/log(2)),col="green")+
-  stat_ecdf(data=mycells_model2,aes(alpha*3600/log(2)),col="blue")+
-  facet_wrap(~condition)+
-  xlab("Growth-rate (h-1)")+
-  ylab("CDF")
+dl <- 0.065
 
-mycells_model1 %>% 
+myframes_to_mycells %>% 
+  semi_join(selected_cells,by=c("cell")) %>% 
+  mutate(oriented_bbox_width_um=oriented_bbox_width_px*dl,
+         oriented_bbox_length_um=oriented_bbox_length_px*dl) %>% 
+  mutate(bbox_length_px=(vertical_bottom-vertical_top),
+         bbox_length_um=bbox_length_px*dl) %>% 
+  mutate(true_frame=frame+1) %>% 
   ggplot()+
-  stat_ecdf(aes(volume_birth),col="black")+
-  stat_ecdf(data=mycells_model1,aes(volume_birth),col="green")+
-  stat_ecdf(data=mycells_model2,aes(volume_birth),col="blue")+
-  facet_wrap(~condition,scale="free")+
-  xlab("Volume birth (um3)")+
-  ylab("CDF")
+  geom_point(aes(true_frame,oriented_bbox_length_um),col="red",alpha=0.5)+
+  geom_point(aes(true_frame,bbox_length_um),col="blue",alpha=0.5)+
+  geom_point(aes(true_frame,length_um),col="orange",alpha=0.5)+
+  facet_wrap(~cell,scale="free")
 
-mycells_model1 %>% 
+myframes_to_mycells %>% 
+  semi_join(selected_cells,by=c("cell")) %>% 
+  mutate(oriented_bbox_width_um=oriented_bbox_width_px*dl,
+         oriented_bbox_length_um=oriented_bbox_length_px*dl) %>% 
+  mutate(bbox_length_px=(vertical_bottom-vertical_top),
+         bbox_length_um=bbox_length_px*dl) %>% 
+  mutate(bbox_rad=(90/360*2*pi)-oriented_bbox_orientation_angle_rad) %>% 
+  mutate(true_frame=frame+1) %>% 
   ggplot()+
-  stat_ecdf(aes(volume_div),col="black")+
-  stat_ecdf(data=mycells_model1,aes(volume_div),col="green")+
-  stat_ecdf(data=mycells_model2,aes(volume_div),col="blue")+
-  facet_wrap(~condition,scale="free")+
-  xlab("Volume birth (um3)")+
-  ylab("CDF")
-
-mycells_model1 %>% 
-  ggplot()+
-  stat_ecdf(aes(div_time),col="black")+
-  stat_ecdf(data=mycells_model1,aes(div_time),col="green")+
-  stat_ecdf(data=mycells_model2,aes(div_time),col="blue")+
-  facet_wrap(~condition,scale="free")+
-  xlab("Division time")+
-  ylab("CDF")
+  geom_point(aes(true_frame,bbox_rad),col="red",alpha=0.5)+
+  #geom_point(aes(true_frame,bbox_length_um),col="blue",alpha=0.5)+
+  geom_point(aes(true_frame,tilt_radian),col="orange",alpha=0.5)+
+  facet_wrap(~cell,scale="free")
 ```
-There seem to be a bias, it seems to be systematic but it is not very important...
+
+# COMPARISON FOR GLYCEROL DATA FOR A FEW TRACES
+
+```{r}
+selected_cells <- myframes_to_mycells %>%
+  filter(condition=="glycerol") %>% 
+  ungroup() %>% 
+  distinct(cell) %>% 
+  sample_n(10)
+
+dl <- 0.065
+
+myframes_to_mycells %>% 
+  semi_join(selected_cells,by=c("cell")) %>% 
+  mutate(oriented_bbox_width_um=oriented_bbox_width_px*dl,
+         oriented_bbox_length_um=oriented_bbox_length_px*dl) %>% 
+  mutate(bbox_length_px=(vertical_bottom-vertical_top),
+         bbox_length_um=bbox_length_px*dl) %>% 
+  mutate(true_frame=frame+1) %>% 
+  ggplot()+
+  geom_point(aes(true_frame,oriented_bbox_length_um),col="red",alpha=0.5)+
+  geom_point(aes(true_frame,bbox_length_um),col="blue",alpha=0.5)+
+  geom_point(aes(true_frame,length_um),col="orange",alpha=0.5)+
+  facet_wrap(~cell,scale="free")
+
+myframes_to_mycells %>% 
+  semi_join(selected_cells,by=c("cell")) %>% 
+  mutate(oriented_bbox_width_um=oriented_bbox_width_px*dl,
+         oriented_bbox_length_um=oriented_bbox_length_px*dl) %>% 
+  mutate(bbox_length_px=(vertical_bottom-vertical_top),
+         bbox_length_um=bbox_length_px*dl) %>% 
+  mutate(bbox_rad=(90/360*2*pi)-oriented_bbox_orientation_angle_rad) %>% 
+  mutate(true_frame=frame+1) %>% 
+  ggplot()+
+  geom_point(aes(true_frame,bbox_rad),col="red",alpha=0.5)+
+  #geom_point(aes(true_frame,bbox_length_um),col="blue",alpha=0.5)+
+  geom_point(aes(true_frame,tilt_radian),col="orange",alpha=0.5)+
+  facet_wrap(~cell,scale="free")
+```
+
+# COMPARISON FOR GLYCEROL DATA FOR A FEW TRACES
+
+```{r}
+selected_cells <- myframes_to_mycells %>%
+  filter(condition=="acetate") %>% 
+  ungroup() %>% 
+  distinct(cell) %>% 
+  sample_n(10)
+
+dl <- 0.065
+
+myframes_to_mycells %>% 
+  semi_join(selected_cells,by=c("cell")) %>% 
+  mutate(oriented_bbox_width_um=oriented_bbox_width_px*dl,
+         oriented_bbox_length_um=oriented_bbox_length_px*dl) %>% 
+  mutate(bbox_length_px=(vertical_bottom-vertical_top),
+         bbox_length_um=bbox_length_px*dl) %>% 
+  mutate(true_frame=frame+1) %>% 
+  ggplot()+
+  geom_point(aes(true_frame,oriented_bbox_length_um),col="red",alpha=0.5)+
+  geom_point(aes(true_frame,bbox_length_um),col="blue",alpha=0.5)+
+  geom_point(aes(true_frame,length_um),col="orange",alpha=0.5)+
+  facet_wrap(~cell,scale="free")
+
+myframes_to_mycells %>% 
+  semi_join(selected_cells,by=c("cell")) %>% 
+  mutate(oriented_bbox_width_um=oriented_bbox_width_px*dl,
+         oriented_bbox_length_um=oriented_bbox_length_px*dl) %>% 
+  mutate(bbox_length_px=(vertical_bottom-vertical_top),
+         bbox_length_um=bbox_length_px*dl) %>% 
+  mutate(bbox_rad=(90/360*2*pi)-oriented_bbox_orientation_angle_rad) %>% 
+  mutate(true_frame=frame+1) %>% 
+  ggplot()+
+  geom_point(aes(true_frame,bbox_rad),col="red",alpha=0.5)+
+  #geom_point(aes(true_frame,bbox_length_um),col="blue",alpha=0.5)+
+  geom_point(aes(true_frame,tilt_radian),col="orange",alpha=0.5)+
+  facet_wrap(~cell,scale="free")
+```
+
+# COMPARISON FOR ALL TRACES IN THIS DATA SET
+
+```{r}
+selected_cells <- myframes_to_mycells %>%
+  #filter(condition=="glucose") %>% 
+  ungroup() %>% 
+  distinct(cell)
+  #sample_n(10)
+
+dl <- 0.065
+
+myframes_to_mycells %>% 
+  semi_join(selected_cells,by=c("cell")) %>% 
+  mutate(oriented_bbox_width_um=oriented_bbox_width_px*dl,
+         oriented_bbox_length_um=oriented_bbox_length_px*dl) %>% 
+  mutate(bbox_length_px=(vertical_bottom-vertical_top),
+         bbox_length_um=bbox_length_px*dl) %>% 
+  mutate(true_frame=frame+1) %>% 
+  ggplot()+
+  #geom_point(aes(length_um,oriented_bbox_length_um),col="black",alpha=0.5)+
+  geom_point(aes(bbox_length_um,oriented_bbox_length_um),col="red",alpha=0.1)+
+  geom_abline(aes(slope=1,intercept=0))+
+  #geom_point(aes(true_frame,length_um),col="orange",alpha=0.5)+
+  facet_wrap(~condition,scale="free")
+
+myframes_to_mycells %>% 
+  semi_join(selected_cells,by=c("cell")) %>% 
+  mutate(oriented_bbox_width_um=oriented_bbox_width_px*dl,
+         oriented_bbox_length_um=oriented_bbox_length_px*dl) %>% 
+  mutate(bbox_length_px=(vertical_bottom-vertical_top),
+         bbox_length_um=bbox_length_px*dl) %>% 
+  mutate(bbox_rad=(90/360*2*pi)-oriented_bbox_orientation_angle_rad) %>% 
+  mutate(true_frame=frame+1) %>% 
+  ggplot()+
+  geom_point(aes(tilt_radian,bbox_rad),col="black",alpha=0.5)+
+  #geom_point(aes(true_frame,bbox_length_um),col="blue",alpha=0.5)+
+  #geom_point(aes(true_frame,tilt_radian),col="orange",alpha=0.5)+
+  facet_wrap(~condition,scale="free")
+```
+
+# LOOKING MORE CLOSELY AT TILT DISTRIBUTION
+
+```{r}
+myframes_to_mycells <- myframes_to_mycells %>% 
+  mutate(oriented_bbox_width_um=oriented_bbox_width_px*dl,
+         oriented_bbox_length_um=oriented_bbox_length_px*dl) %>% 
+  mutate(bbox_length_px=(vertical_bottom-vertical_top),
+         bbox_length_um=bbox_length_px*dl) %>% 
+  mutate(bbox_rad=(90/360*2*pi)-oriented_bbox_orientation_angle_rad) %>% 
+  mutate(true_frame=frame+1)
+```
+
+```{r}
+# getting the vector of interest.
+df <- myframes_to_mycells %>% 
+  filter(condition=="glucose") %>% .$bbox_rad
+
+summary(df)
+
+breakVec <-  seq(-3e-1,3e-1,by=1e-2)
+dev.new(width=4, height=4)
+h <- hist(df, breaks = breakVec, density = 10,freq=TRUE,prob=FALSE,ylab="Counts",main="",xaxp=c(-3e-1,3e-1,10))
+h$counts = log10(h$counts)
+plot(h,ylim=c(0,4),ylab='log10(Counts)',main="",xlab="bbox_tilt_rad")
+title("Glucose")
+```
+
+```{r}
+# getting the vector of interest.
+df <- myframes_to_mycells %>% 
+  filter(condition=="glucose") %>% .$tilt_radian
+
+summary(df)
+
+breakVec <-  seq(-3e-1,3e-1,by=1e-2)
+dev.new(width=4, height=4)
+h <- hist(df, breaks = breakVec, density = 10,freq=TRUE,prob=FALSE,ylab="Counts",main="",xaxp=c(-3e-1,3e-1,10))
+h$counts = log10(h$counts)
+plot(h,ylim=c(0,4),ylab='log10(Counts)',main="",xlab="ellipse_tilt_rad")
+title("Glucose")
+```
+
+```{r}
+# getting the vector of interest.
+df <- myframes_to_mycells %>% 
+  filter(condition=="glycerol") %>% .$bbox_rad
+
+summary(df)
+
+breakVec <-  seq(-3e-1,3e-1,by=1e-2)
+dev.new(width=4, height=4)
+h <- hist(df, breaks = breakVec, density = 10,freq=TRUE,prob=FALSE,ylab="Counts",main="",xaxp=c(-3e-1,3e-1,10))
+h$counts = log10(h$counts)
+plot(h,ylim=c(0,4),ylab='log10(Counts)',main="",xlab="bbox_tilt_rad")
+title("Glycerol")
+```
+
+```{r}
+# getting the vector of interest.
+df <- myframes_to_mycells %>% 
+  filter(condition=="glycerol") %>% .$tilt_radian
+
+summary(df)
+
+breakVec <-  seq(-3e-1,3e-1,by=1e-2)
+dev.new(width=4, height=4)
+h <- hist(df, breaks = breakVec, density = 10,freq=TRUE,prob=FALSE,ylab="Counts",main="",xaxp=c(-3e-1,3e-1,10))
+h$counts = log10(h$counts)
+plot(h,ylim=c(0,4),ylab='log10(Counts)',main="",xlab="ellipse_tilt_rad")
+title("Glycerol")
+```
+
+So for a reason that I do not understand... assymetrical.
+I would need to do it in acetate now.
+
+```{r}
+# getting the vector of interest.
+df <- myframes_to_mycells %>% 
+  filter(condition=="acetate") %>% .$bbox_rad
+
+summary(df)
+
+breakVec <-  seq(-4e-1,4e-1,by=1e-2)
+dev.new(width=4, height=4)
+h <- hist(df, breaks = breakVec, density = 10,freq=TRUE,prob=FALSE,ylab="Counts",main="",xaxp=c(-4e-1,4e-1,10))
+h$counts = log10(h$counts)
+plot(h,ylim=c(0,4),ylab='log10(Counts)',main="",xlab="bbox_tilt_rad")
+title("Acetate")
+```
+
+```{r}
+# getting the vector of interest.
+df <- myframes_to_mycells %>% 
+  filter(condition=="acetate") %>% .$tilt_radian
+
+summary(df)
+
+breakVec <-  seq(-4e-1,4e-1,by=1e-2)
+dev.new(width=4, height=4)
+h <- hist(df, breaks = breakVec, density = 10,freq=TRUE,prob=FALSE,ylab="Counts",main="",xaxp=c(-4e-1,4e-1,10))
+h$counts = log10(h$counts)
+plot(h,ylim=c(0,4),ylab='log10(Counts)',main="",xlab="ellipse_tilt_rad")
+title("Acetate")
+```
+
+Now, I need to look at the overlays.
 
 # COMPARISON CELL BY CELL
 

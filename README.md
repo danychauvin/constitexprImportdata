@@ -11,9 +11,10 @@ Bear in mind: everything should be compatible with R 4.1.0.
 
 ### readMMData.R
 
-Warnings: There are currently two versions:
+Warnings: There are currently three versions:
 - readMMData_202008.R is compatible with the old deepMoma output (202008).
 - readMMData_202111.R is compatible with the newest deepMoma output (202111).
+- readMMData_20220113.R is a development version aimed at testing the rotating box (Michael).
 
 
 #### Input

@@ -19,7 +19,8 @@ myframes_to_mycells <- myframes_to_mycells %>%
   mutate(g_birth=first(gfp_nb)) %>% 
   mutate(g_div=last(gfp_nb))
 cell_fluo_info <- myframes_to_mycells %>% 
-  distinct(cell,g_birth,g_div)
+  distinct(cell,g_birth,g_div) %>% 
+  ungroup()
 
 
 # Propagating fluorescence information to full cell cycle
